@@ -3,7 +3,6 @@ import { Model } from "sequelize"
 import { create } from 'domain';
 
 const { Form, AutoComplete } = require("enquirer");
-const { forceSync } = require('sync-rpc');
 
 type PromptAnswer = {
   result: string
@@ -46,27 +45,36 @@ const getRelatedFields = (model: ModelType) => {
 }
 
 const getFieldChoices = async (association: object) => {
-  let names: string[] = []
   let choices = Object.keys(association).map(async fieldName => {
-    names.push(fieldName)
     let { model, key } = association[fieldName]
-    return await sequelize.query(`SELECT * FROM ${model}`)
+    const [result, _ ] = await sequelize.query(`SELECT * FROM ${model}`)
+    return [result, fieldName]
   })
   let choice_ids = Object.keys(association).map(async fieldName => {
-    names.push(fieldName)
     let { model, key } = association[fieldName]
-    return await sequelize.query(`SELECT ${key} FROM ${model}`)
+    const [result, _ ] = await sequelize.query(`SELECT ${key} FROM ${model}`)
+    return [result, key]
   })
   return Promise.all([...choices, ...choice_ids])
 }
 
-const showChoices = (choices, callback) => {
-  let _choices = choices.slice(0, choices.length/2)
-  let choiceIds = choices.slice(choices.length/2)
-  _choices.forEach(_choice => {
-    let [ choice, _ ] = _choice;
-    const prompt = new AutoComplete({name:"ok", message: "ok", choices: choice})
-    prompt.run().then(callback).catch(console.error)
+const showChoices = (choiceLists, relatedFields, callback) => {
+  let _choiceLists = choiceLists.slice(0, choiceLists.length/2) // list of full records fetched from db
+  let choiceIdLists = choiceLists.slice(choiceLists.length/2) // list of records with just id fetched from db
+  _choiceLists.forEach((choiceTuple, idx) => {
+    let [choiceList, fieldName] = choiceTuple
+    let choiceStrings = [];
+    let choices = choiceList.map(choice => {
+      // just concat each record object into big searchable strings
+      let choiceStr = Object.keys(choice).map(key => choice[key]).join(", ")
+      choiceStrings.push(choiceStr)
+    })
+    let message = `Make a selection for related field ${fieldName}.`
+    const prompt = new AutoComplete({name: fieldName, message, choices: [...choiceStrings]})
+    prompt.run().then((answer: string)=> {
+      let [choiceIds, keyName] = choiceIdLists[idx]
+      callback(choiceIds[choiceStrings.indexOf(answer)][keyName], idx === _choiceLists.length - 1)
+    }).catch(console.error)
   })
 }
 
@@ -87,16 +95,16 @@ const performPrompt = (model: ModelType) => {
 const related = (model: ModelType) => {
   const relatedFields = getRelatedFields(model)
   const fieldChoicePromises = getFieldChoices(relatedFields)
-  fieldChoicePromises.then((choices) => showChoices(choices, console.log)).catch(console.error)
+  let ids = [];
+  const callback = (id, isLast) => {
+    ids.push(id);
+    if (isLast) {
+      console.log(ids)
+    }
+  }
+  fieldChoicePromises.then((choices) => {
+    showChoices(choices, relatedFields, console.log)
+  }).catch(console.error)
 }
-
-// performPrompt(User)
-// performPrompt(Project)
-
-// console.log(getRelatedFields(Project))
-// getFieldChoices({ ownerId: { model: 'users', key: 'id' } }).then(console.log).catch(console.error)
-// getFieldChoices({ ownerId: { model: 'users', key: 'id' } }).catch(console.error)
-// console.log(getFieldChoices({ ownerId: { model: 'users', key: 'id' } }))
-// console.log("dang")
 
 related(Project)

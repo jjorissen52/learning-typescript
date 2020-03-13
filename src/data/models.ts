@@ -57,7 +57,7 @@ Project.init({
     primaryKey: true,
   },
   ownerId: {
-    type: DataTypes.INTEGER.UNSIGNED,
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
   name: {
@@ -71,7 +71,7 @@ Project.init({
 
 User.init({
   id: {
-    type: DataTypes.INTEGER.UNSIGNED,
+    type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
   },

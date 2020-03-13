@@ -25,7 +25,7 @@ Project.init({
         primaryKey: true,
     },
     ownerId: {
-        type: sequelize_1.DataTypes.INTEGER.UNSIGNED,
+        type: sequelize_1.DataTypes.INTEGER,
         allowNull: false,
     },
     name: {
@@ -38,7 +38,7 @@ Project.init({
 });
 User.init({
     id: {
-        type: sequelize_1.DataTypes.INTEGER.UNSIGNED,
+        type: sequelize_1.DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
     },

@@ -2,6 +2,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const dataPrompts_1 = require("./dataPrompts");
+const models_1 = require("./models");
 require('yargs') // eslint-disable-line
     .command('create [model_name]', 'create an instance of [model_name]', (yargs) => {
     yargs
@@ -20,6 +21,11 @@ require('yargs') // eslint-disable-line
     alias: 'v',
     type: 'boolean',
     description: 'Run with verbose logging'
+})
+    .command('sync', 'sync the current models with the database', (yargs) => {
+    yargs;
+}, (argv) => {
+    models_1.default.sequelize.sync();
 })
     .argv;
 //# sourceMappingURL=cli.js.map

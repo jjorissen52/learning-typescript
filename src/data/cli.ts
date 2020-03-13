@@ -21,4 +21,9 @@ require('yargs') // eslint-disable-line
     type: 'boolean',
     description: 'Run with verbose logging'
   })
+  .command('sync', 'sync the current models with the database', (yargs) => {
+    yargs
+  }, (argv) => {
+    models.sequelize.sync()
+  })
   .argv

@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "outDir": "build/",
+    "module": "commonjs",
+    "outDir": "dist/",
     "sourceMap": true,
     "preserveConstEnums": true,
-    "target": "ES6",
+    "target": "ES6"
   },
   "include": [
     "src/**/*",

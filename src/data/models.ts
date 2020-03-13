@@ -1,7 +1,8 @@
+//@ts-nocheck
 import { Sequelize, Model, DataTypes, BuildOptions } from 'sequelize';
 import { HasManyGetAssociationsMixin, HasManyAddAssociationMixin, HasManyHasAssociationMixin, Association, HasManyCountAssociationsMixin, HasManyCreateAssociationMixin } from 'sequelize';
 
-export class User extends Model {
+class User extends Model {
   public id!: number; // Note that the `null assertion` `!` is required in strict mode.
   public name!: string;
   public preferredName!: string | null; // for nullable fields
@@ -30,9 +31,9 @@ export class User extends Model {
 
 }
 
-export const sequelize = new Sequelize('sqlite:db.sqlite3');
+const sequelize = new Sequelize('sqlite:db.sqlite3');
 
-export class Project extends Model {
+class Project extends Model {
   public id!: number;
   public ownerId!: number;
   public name!: string;
@@ -41,7 +42,7 @@ export class Project extends Model {
   public readonly updatedAt!: Date;
 }
 
-export class Address extends Model {
+class Address extends Model {
   public userId!: number;
   public address!: string;
 
@@ -51,7 +52,7 @@ export class Address extends Model {
 
 Project.init({
   id: {
-    type: DataTypes.INTEGER.UNSIGNED, // you can omit the `new` but this is discouraged
+    type: DataTypes.INTEGER, // you can omit the `new` but this is discouraged
     autoIncrement: true,
     primaryKey: true,
   },
@@ -131,16 +132,9 @@ async function stuff() {
                                           // the model or not
 }
 
-// function createUser(userData: Object) {
-//   let { name, preferredName } = userData
-// }
-
-
-// sequelize.sync()
-// stuff().catch(console.log)
-
-// module.exports = {
-//   User,
-//   Project, 
-//   Address,
-// }
+export default {
+  User,
+  Address,
+  Project,
+  sequelize
+}

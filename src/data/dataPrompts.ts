@@ -1,8 +1,11 @@
-import { User, Project, sequelize } from './models'
+import models from './models'
+import { isEmpty } from "./utils"
+//@ts-ignore
 import { Model } from "sequelize"
-import { create } from 'domain';
 
 const { Form, AutoComplete } = require("enquirer");
+
+const sequelize = models.sequelize
 
 type PromptAnswer = {
   result: string
@@ -11,20 +14,19 @@ type PromptAnswer = {
 // type necessary to allow
 // passing of aribitrary model classes to
 // function
-type ModelType = typeof Model & {
+export type ModelType = typeof Model & {
   create(object: object): Promise<object>,
 }
 
 const createFormArgs = (name: string, message: string, choices: object) => {
   let formArgs = { name, message, choices: [] }
-  let templateFields = []
   Object.keys(choices).forEach(key => {
     formArgs.choices.push({name: key, message: choices[key]})
   })
   return formArgs
 }
 
-const getRequiredFields = (model: ModelType) => {
+const getRequiredFields = (model: ModelType): string[] => {
   let raw = model.rawAttributes
   return Object.keys(raw).filter(key => {
     let entry = raw[key]
@@ -73,12 +75,28 @@ const showChoices = (choiceLists, relatedFields, callback) => {
     const prompt = new AutoComplete({name: fieldName, message, choices: [...choiceStrings]})
     prompt.run().then((answer: string)=> {
       let [choiceIds, keyName] = choiceIdLists[idx]
-      callback(choiceIds[choiceStrings.indexOf(answer)][keyName], idx === _choiceLists.length - 1)
+      callback([fieldName, choiceIds[choiceStrings.indexOf(answer)][keyName]], idx === _choiceLists.length - 1)
     }).catch(console.error)
   })
 }
 
-const performPrompt = (model: ModelType) => {
+const relatedFieldsPrompt = (relatedFields: object, createCallback: Function) => {
+  // const relatedFields = getRelatedFields(model)
+  const fieldChoicePromises = getFieldChoices(relatedFields)
+  let populatedFields = {}
+  const callback = (value_tuple: [string, BigInteger], isLast: boolean) => {
+    let [key, value] = value_tuple;
+    populatedFields[key] = value;
+    if (isLast) {
+      createCallback(populatedFields)
+    }
+  }
+  fieldChoicePromises.then((choices) => {
+    showChoices(choices, relatedFields, callback)
+  }).catch(console.error)
+}
+
+export const userDataPrompt = (model: ModelType) => {
   const fields = getRequiredFields(model).reduce((fields, field) => {
     return {...fields, [field]: field}
   }, {})
@@ -86,25 +104,25 @@ const performPrompt = (model: ModelType) => {
   const prompt = new Form(formArgs)
   prompt.run()
   .then((answer: object) => {
-    const user = model.create(answer);
-    user.catch(console.error)
+    const create = (extras: object) => {
+      const user = model.create({...answer, ...extras}).catch(console.error);
+    }
+    const relatedFields = getRelatedFields(model)
+    if (isEmpty(relatedFields)) {
+      create({})
+    } else {
+      relatedFieldsPrompt(relatedFields, create)
+    }
   })
   .catch(console.error);
 }
 
-const related = (model: ModelType) => {
-  const relatedFields = getRelatedFields(model)
-  const fieldChoicePromises = getFieldChoices(relatedFields)
-  let ids = [];
-  const callback = (id, isLast) => {
-    ids.push(id);
-    if (isLast) {
-      console.log(ids)
+export const selectModel = (selection: string): ModelType|null => {
+  let modelNames = Object.keys(models);
+  for (let i in modelNames){
+    if (modelNames[i].toUpperCase() === selection.toUpperCase()) {
+      return models[modelNames[i]]
     }
   }
-  fieldChoicePromises.then((choices) => {
-    showChoices(choices, relatedFields, console.log)
-  }).catch(console.error)
+  return null
 }
-
-related(Project)
